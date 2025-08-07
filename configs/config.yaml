@@ -1,0 +1,17 @@
+grpc:
+  port: ":50051"
+
+database:
+  url: "postgres://user:pass@postgres:5432/authdb?sslmode=disable"
+
+redis:
+  addr: "redis:6379"
+
+smtp:
+  host: "smtp.mailgun.org"
+  port: 587
+  user: "postmaster@mg.example.com"
+  pass: "supersecret"
+
+log:
+  level: "info"
