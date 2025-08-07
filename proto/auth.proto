@@ -1,6 +1,6 @@
 syntax = "proto3";
 package auth;
-option go_package = "github.com/aquaheyday/go-auth-service/proto";
+option go_package = "github.com/aquaheyday/go-auth-server/proto";
 
 service AuthService {
   rpc SendVerification(SendVerificationReq) returns (SendVerificationRes);

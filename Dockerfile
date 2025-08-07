@@ -5,8 +5,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build \
-    -o auth-service \
-    ./cmd/auth-service
+    -o auth-server \
+    ./cmd/auth-server
 
 # Runtime Stage
 FROM alpine:latest
