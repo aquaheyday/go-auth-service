@@ -30,3 +30,15 @@ func (r *VerificationRepository) VerifyCode(ctx context.Context, email, code str
 	}
 	return val == code, nil
 }
+
+// GetCode retrieves the raw verification code.
+func (r *VerificationRepository) GetCode(ctx context.Context, email string) (string, error) {
+	key := "verify:" + email
+	return r.rdb.Get(ctx, key).Result()
+}
+
+// DeleteCode removes the verification code after use.
+func (r *VerificationRepository) DeleteCode(ctx context.Context, email string) error {
+	key := "verify:" + email
+	return r.rdb.Del(ctx, key).Err()
+}

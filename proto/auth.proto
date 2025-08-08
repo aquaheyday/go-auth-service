@@ -31,9 +31,16 @@ message SendVerificationRes { string message = 1; }
 message VerifyCodeReq  { string email = 1; string code = 2; }
 message VerifyCodeRes  { bool ok = 1; }
 
+message VerifyAuthResponse {
+  bool ok               = 1;
+  bool signUpRequired   = 2;
+  string access_token   = 3;
+}
+
 message SignUpReq {
   string email    = 1;
   string password = 2;
   string code     = 3;
 }
 message SignUpRes { string user_id = 1; }
+

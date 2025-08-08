@@ -10,6 +10,8 @@ import (
 type VerificationRepository interface {
 	SaveCode(ctx context.Context, email, code string) error
 	VerifyCode(ctx context.Context, email, code string) (bool, error)
+	GetCode(ctx context.Context, email string) (string, error)
+	DeleteCode(ctx context.Context, email string) error
 }
 
 type MailSender interface {
