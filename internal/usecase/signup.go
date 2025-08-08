@@ -13,20 +13,20 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
-type SignupUsecase interface {
+type SignupUseCase interface {
 	SignUp(ctx context.Context, email, password, code string) (string, error)
 }
 
-type signupUsecase struct {
+type signupUseCase struct {
 	userRepo         UserRepository
 	verificationRepo VerificationRepository
 }
 
-func NewSignupUsecase(uRepo UserRepository, vRepo VerificationRepository) SignupUsecase {
-	return &signupUsecase{userRepo: uRepo, verificationRepo: vRepo}
+func NewSignupUseCase(uRepo UserRepository, vRepo VerificationRepository) SignupUseCase {
+	return &signupUseCase{userRepo: uRepo, verificationRepo: vRepo}
 }
 
-func (s *signupUsecase) SignUp(ctx context.Context, email, password, code string) (string, error) {
+func (s *signupUseCase) SignUp(ctx context.Context, email, password, code string) (string, error) {
 	valid, err := s.verificationRepo.VerifyCode(ctx, email, code)
 	if err != nil {
 		return "", err

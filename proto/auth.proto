@@ -1,22 +1,39 @@
+// proto/auth.proto
+
 syntax = "proto3";
 package auth;
-option go_package = "github.com/aquaheyday/go-auth-server/proto";
+
+// protoc-gen-go, grpc plugin 으로 코드를 생성할 때
+// └─ pkg/pb/auth/auth.pb.go
+// └─ pkg/pb/auth/auth_grpc.pb.go
+// 아래 주석이 go:generate 명령어를 정의합니다.
+// (터미널에서 `cd proto && go generate` 실행)
+
+//go:generate protoc \
+//  --proto_path=. \
+//    --go_out=paths=source_relative:../pkg/pb/auth \
+//    --go-grpc_out=paths=source_relative:../pkg/pb/auth \
+//    auth.proto
+
+// option go_package 는 생성된 Go 파일 내 `package` 경로를 알려줍니다.
+// <모듈 경로>/pkg/pb/auth;auth  형태로 지정
+option go_package = "github.com/aquaheyday/go-auth-server/pkg/pb/auth;auth";
 
 service AuthService {
-  rpc SendVerification(SendVerificationReq) returns (SendVerificationRes);
-  rpc VerifyCode(VerifyCodeReq) returns (VerifyCodeRes);
-  rpc SignUp(SignUpReq) returns (SignUpRes);
+  rpc SendVerification (SendVerificationReq)  returns (SendVerificationRes);
+  rpc VerifyCode       (VerifyCodeReq)      returns (VerifyCodeRes);
+  rpc SignUp           (SignUpReq)          returns (SignUpRes);
 }
 
 message SendVerificationReq { string email = 1; }
 message SendVerificationRes { string message = 1; }
 
 message VerifyCodeReq  { string email = 1; string code = 2; }
-message VerifyCodeRes { bool ok = 1; }
+message VerifyCodeRes  { bool ok = 1; }
 
 message SignUpReq {
-  string email = 1;
+  string email    = 1;
   string password = 2;
-  string code = 3;
+  string code     = 3;
 }
 message SignUpRes { string user_id = 1; }

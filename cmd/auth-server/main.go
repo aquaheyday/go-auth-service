@@ -1,19 +1,19 @@
 package main
 
 import (
+	mailerinfra "github.com/aquaheyday/go-auth-service/internal/infra/mailer/mock"
+	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 
 	grpcdeliv "github.com/aquaheyday/go-auth-service/internal/delivery/grpc"
 	"github.com/aquaheyday/go-auth-service/internal/infra/cache"
 	"github.com/aquaheyday/go-auth-service/internal/infra/db"
-	mailerinfra "github.com/aquaheyday/go-auth-service/internal/infra/mailer"
 	postgresrepo "github.com/aquaheyday/go-auth-service/internal/repository/postgres"
 	redisrepo "github.com/aquaheyday/go-auth-service/internal/repository/redis"
 	"github.com/aquaheyday/go-auth-service/internal/usecase"
 	"github.com/aquaheyday/go-auth-service/pkg/config"
 	"github.com/aquaheyday/go-auth-service/pkg/logger"
-	"github.com/aquaheyday/go-auth-service/proto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -49,8 +49,8 @@ func main() {
 	// 레포지토리 및 유스케이스
 	userRepo := postgresrepo.NewUserRepository(dbConn)
 	verificationRepo := redisrepo.NewVerificationRepository(rdb)
-	verifyUC := usecase.NewVerifyUsecase(verificationRepo, mailSender)
-	signupUC := usecase.NewSignupUsecase(userRepo, verificationRepo)
+	verifyUC := usecase.NewVerifyUseCase(verificationRepo, mailSender)
+	signupUC := usecase.NewSignupUseCase(userRepo, verificationRepo)
 
 	// gRPC 서버 구동
 	lis, err := net.Listen("tcp", cfg.GRPCPort)
@@ -60,6 +60,9 @@ func main() {
 	server := grpcdeliv.NewServer(verifyUC, signupUC, logg)
 	grpcServer := grpc.NewServer()
 	grpcdeliv.RegisterGRPCServer(grpcServer, server)
+
+	// 리플렉션 등록
+	reflection.Register(grpcServer)
 
 	logg.Info("gRPC server running", zap.String("port", cfg.GRPCPort))
 	if err := grpcServer.Serve(lis); err != nil {

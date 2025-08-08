@@ -9,9 +9,13 @@ services:
       - POSTGRES_DB=authdb
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   redis:
     image: redis:7
+    ports:
+      - "6379:6379"
 
   auth-service:
     build:
@@ -20,7 +24,7 @@ services:
     ports:
       - "50051:50051"
     environment:
-      - DATABASE_URL=postgres://user:pass@postgres:5432/authdb?sslmode=disable
+      - POSTGRES_URL=postgres://user:pass@postgres:5432/authdb?sslmode=disable
       - REDIS_ADDR=redis:6379
       - SMTP_HOST=smtp.mailgun.org
       - SMTP_PORT=587

@@ -16,21 +16,21 @@ type MailSender interface {
 	Send(to, subject, body string) error
 }
 
-type VerifyUsecase interface {
+type VerifyUseCase interface {
 	SendVerification(ctx context.Context, email string) error
 	VerifyCode(ctx context.Context, email, code string) (bool, error)
 }
 
-type verifyUsecase struct {
+type verifyUseCase struct {
 	repo   VerificationRepository
 	mailer MailSender
 }
 
-func NewVerifyUsecase(repo VerificationRepository, mailer MailSender) VerifyUsecase {
-	return &verifyUsecase{repo: repo, mailer: mailer}
+func NewVerifyUseCase(repo VerificationRepository, mailer MailSender) VerifyUseCase {
+	return &verifyUseCase{repo: repo, mailer: mailer}
 }
 
-func (v *verifyUsecase) SendVerification(ctx context.Context, email string) error {
+func (v *verifyUseCase) SendVerification(ctx context.Context, email string) error {
 	// 랜덤 코드 생성
 	b := make([]byte, 3)
 	if _, err := rand.Read(b); err != nil {
@@ -48,6 +48,6 @@ func (v *verifyUsecase) SendVerification(ctx context.Context, email string) erro
 	return v.mailer.Send(email, "Email Verification", body)
 }
 
-func (v *verifyUsecase) VerifyCode(ctx context.Context, email, code string) (bool, error) {
+func (v *verifyUseCase) VerifyCode(ctx context.Context, email, code string) (bool, error) {
 	return v.repo.VerifyCode(ctx, email, code)
 }

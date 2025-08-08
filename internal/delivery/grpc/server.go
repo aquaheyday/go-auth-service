@@ -2,22 +2,22 @@ package grpc
 
 import (
 	"github.com/aquaheyday/go-auth-service/internal/usecase"
-	"github.com/aquaheyday/go-auth-service/proto"
+	pb "github.com/aquaheyday/go-auth-service/pkg/pb/auth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 type GRPCServer struct {
-	proto.UnimplementedAuthServiceServer
-	verifyUC usecase.VerifyUsecase
-	signupUC usecase.SignupUsecase
+	pb.UnimplementedAuthServiceServer
+	verifyUC usecase.VerifyUseCase
+	signupUC usecase.SignupUseCase
 	log      *zap.Logger
 }
 
-func NewServer(v usecase.VerifyUsecase, s usecase.SignupUsecase, log *zap.Logger) *GRPCServer {
+func NewServer(v usecase.VerifyUseCase, s usecase.SignupUseCase, log *zap.Logger) *GRPCServer {
 	return &GRPCServer{verifyUC: v, signupUC: s, log: log}
 }
 
 func RegisterGRPCServer(gs *grpc.Server, srv *GRPCServer) {
-	proto.RegisterAuthServiceServer(gs, srv)
+	pb.RegisterAuthServiceServer(gs, srv)
 }

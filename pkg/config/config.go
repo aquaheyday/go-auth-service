@@ -1,7 +1,9 @@
 package config
 
 import (
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
+	"log"
 )
 
 type Config struct {
@@ -16,23 +18,26 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("configs")
-	viper.AutomaticEnv()
-
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, err
+	// 1) .env 파일 로드 (실패해도 무시)
+	if err := godotenv.Load(); err != nil {
+		log.Printf("No .env file found, relying on ENV vars: %v", err)
 	}
 
-	return &Config{
-		GRPCPort:    viper.GetString("grpc.port"),
-		DatabaseURL: viper.GetString("database.url"),
-		RedisAddr:   viper.GetString("redis.addr"),
-		SMTPHost:    viper.GetString("smtp.host"),
-		SMTPPort:    viper.GetInt("smtp.port"),
-		SMTPUser:    viper.GetString("smtp.user"),
-		SMTPPass:    viper.GetString("smtp.pass"),
-		LogLevel:    viper.GetString("log.level"),
-	}, nil
+	// 2) viper 설정
+	viper.AutomaticEnv()        // ENV 변수 우선
+	viper.SetConfigFile(".env") // .env 파일도 읽기
+	_ = viper.ReadInConfig()    // 파일 없으면 에러 무시
+
+	cfg := &Config{
+		GRPCPort:    viper.GetString("GRPC_PORT"),
+		DatabaseURL: viper.GetString("DATABASE_URL"),
+		RedisAddr:   viper.GetString("REDIS_ADDR"),
+		SMTPHost:    viper.GetString("SMTP_HOST"),
+		SMTPPort:    viper.GetInt("SMTP_PORT"),
+		SMTPUser:    viper.GetString("SMTP_USER"),
+		SMTPPass:    viper.GetString("SMTP_PASS"),
+		LogLevel:    viper.GetString("LOG_LEVEL"),
+	}
+
+	return cfg, nil
 }

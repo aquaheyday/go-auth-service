@@ -1,0 +1,43 @@
+# Go build artifacts
+auth-server
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Generated protobuf code (if you choose not to commit them)
+pkg/pb/**
+
+# Dependency directories (remove if you vendor dependencies)
+vendor/
+
+# Environment files
+.env
+.env.*.local
+
+# Docker
+**/pgdata/
+**/redisdata/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Go modules cache
+/pkg/mod/
+
+# Coverage reports
+coverage.out
+*.coverprofile
