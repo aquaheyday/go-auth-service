@@ -4,7 +4,7 @@
 package main
 
 import (
-	mailerinfra "github.com/aquaheyday/go-auth-service/internal/infra/mailer/mock"
+	mailerSG "github.com/aquaheyday/go-auth-service/internal/infra/mailer"
 	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
@@ -44,10 +44,12 @@ func main() {
 	rdb := cache.NewRedis(cfg.RedisAddr)
 	defer rdb.Close() // 애플리케이션 종료 시 연결 해제
 
-	// 메일러(메일 발송) 인터페이스 초기화 (mock 사용)
-	mailSender := mailerinfra.NewSMTPMailer(
-		cfg.SMTPHost, cfg.SMTPPort,
-		cfg.SMTPUser, cfg.SMTPPass,
+	// 메일러(메일 발송) 인터페이스 초기화
+	mailSender := mailerSG.NewSendGridMailer(
+		cfg.SendGridAPIKey,
+		cfg.SendGridFromEmail,
+		cfg.SendGridFromName,
+		cfg.SendGridSandbox, // prod에선 false 권장
 	)
 
 	// 레포지토리 및 유스케이스(비즈니스 로직) 구성
