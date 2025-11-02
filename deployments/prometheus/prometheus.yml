@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth-service:9090']
+
+  # Node Exporter 추가 시
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']

@@ -6,7 +6,12 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"github.com/aquaheyday/go-auth-service/internal/infra/sms"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // VerificationRepository 인터페이스는 인증 코드의 저장, 확인, 조회, 삭제 기능을 정의합니다.
@@ -15,6 +20,9 @@ type VerificationRepository interface {
 	VerifyCode(ctx context.Context, email, code string) (bool, error) // 저장된 코드와 비교하여 일치 여부 반환
 	GetCode(ctx context.Context, email string) (string, error)        // 원시 코드 조회 (추가 검증 시 사용)
 	DeleteCode(ctx context.Context, email string) error               // 사용 후 코드 삭제
+	StorePhoneVerificationCode(ctx context.Context, phoneNumber, code string, expiration time.Duration) error
+	GetPhoneVerificationCode(ctx context.Context, phoneNumber string) (string, error)
+	DeletePhoneVerificationCode(ctx context.Context, phoneNumber string) error
 }
 
 // MailSender 인터페이스는 이메일 전송 기능을 추상화합니다.
@@ -30,8 +38,9 @@ type VerifyUseCase interface {
 
 // verifyUseCase 구조체는 실제 레포지토리와 메일러를 사용하여 VerifyUseCase를 구현합니다.
 type verifyUseCase struct {
-	repo   VerificationRepository // 코드 저장소
-	mailer MailSender             // 이메일 발송기
+	repo        VerificationRepository // 코드 저장소
+	mailer      MailSender             // 이메일 발송기
+	smsProvider sms.SMSProvider
 }
 
 // NewVerifyUseCase 생성자 함수는 repo와 mailer를 주입받아 UseCase 인스턴스를 반환합니다.
@@ -74,4 +83,62 @@ func (v *verifyUseCase) VerifyCode(ctx context.Context, email, code string) (boo
 	}
 	// 일치 여부 반환
 	return ok, nil
+}
+
+// 휴대폰 인증 코드 발송 기능
+func (uc *VerifyUseCase) SendPhoneVerification(ctx context.Context, phoneNumber string) error {
+	// 전화번호 포맷 확인 (+82로 시작하는지 등)
+	if !isValidPhoneNumber(phoneNumber) {
+		return errors.New("invalid phone number format")
+	}
+
+	// 인증 코드 생성 (6자리 숫자)
+	code := generateNumericVerificationCode()
+
+	// 인증 코드 저장 (10분 유효)
+	if err := uc.verificationRepo.StorePhoneVerificationCode(ctx, phoneNumber, code, time.Minute*10); err != nil {
+		return fmt.Errorf("failed to store verification code: %w", err)
+	}
+
+	// SMS 발송
+	if err := uc.smsProvider.SendVerificationSMS(ctx, phoneNumber, code); err != nil {
+		return fmt.Errorf("failed to send SMS: %w", err)
+	}
+
+	return nil
+}
+
+// 휴대폰 인증 코드 검증 기능
+func (uc *VerifyUseCase) VerifyPhoneCode(ctx context.Context, phoneNumber, code string) (bool, error) {
+	// 저장된 코드 조회
+	storedCode, err := uc.verificationRepo.GetPhoneVerificationCode(ctx, phoneNumber)
+	if err != nil {
+		return false, fmt.Errorf("failed to get verification code: %w", err)
+	}
+
+	// 코드 비교
+	if storedCode != code {
+		return false, nil
+	}
+
+	// 검증 성공 시 코드 삭제
+	if err := uc.verificationRepo.DeletePhoneVerificationCode(ctx, phoneNumber); err != nil {
+		return true, fmt.Errorf("failed to delete verification code: %w", err)
+	}
+
+	return true, nil
+}
+
+// 숫자 인증 코드 생성 (6자리)
+func generateNumericVerificationCode() string {
+	rand.Seed(time.Now().UnixNano())
+	code := rand.Intn(900000) + 100000 // 100000-999999 사이의 숫자
+	return strconv.Itoa(code)
+}
+
+// 전화번호 유효성 검사
+func isValidPhoneNumber(phoneNumber string) bool {
+	// +82로 시작하는 국제 번호 형식 확인
+	// 정규식 등을 사용해 더 정확한 검증 가능
+	return len(phoneNumber) >= 8 && strings.HasPrefix(phoneNumber, "+")
 }

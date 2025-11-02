@@ -11,13 +11,24 @@ type GRPCServer struct {
 	pb.UnimplementedAuthServiceServer
 	verifyUC usecase.VerifyUseCase
 	signupUC usecase.SignupUseCase
+	loginUC  usecase.LoginUseCase
 	log      *zap.Logger
-}
-
-func NewServer(v usecase.VerifyUseCase, s usecase.SignupUseCase, log *zap.Logger) *GRPCServer {
-	return &GRPCServer{verifyUC: v, signupUC: s, log: log}
 }
 
 func RegisterGRPCServer(gs *grpc.Server, srv *GRPCServer) {
 	pb.RegisterAuthServiceServer(gs, srv)
+}
+
+func NewGRPCServer(
+	logger *zap.Logger,
+	verifyUC usecase.VerifyUseCase,
+	signupUC usecase.SignupUseCase,
+	loginUC usecase.LoginUseCase, // 생성자에 파라미터 추가
+) *GRPCServer {
+	return &GRPCServer{
+		log:      logger,
+		verifyUC: verifyUC,
+		signupUC: signupUC,
+		loginUC:  loginUC, // 필드 초기화
+	}
 }

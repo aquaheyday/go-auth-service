@@ -1,4 +1,4 @@
-// proto/auth.proto
+// proto/v1/auth.proto
 
 syntax = "proto3";
 package auth;
@@ -17,12 +17,22 @@ package auth;
 
 // option go_package 는 생성된 Go 파일 내 `package` 경로를 알려줍니다.
 // <모듈 경로>/pkg/pb/auth;auth  형태로 지정
-option go_package = "github.com/aquaheyday/go-auth-server/pkg/pb/auth;auth";
+option go_package = "github.com/aquaheyday/go-auth-service/pkg/pb/auth;auth";
 
 service AuthService {
   rpc SendVerification (SendVerificationReq)  returns (SendVerificationRes);
   rpc VerifyCode       (VerifyCodeReq)      returns (VerifyCodeRes);
   rpc SignUp           (SignUpReq)          returns (SignUpRes);
+  rpc Login           (LoginReq)            returns (LoginRes);
+  rpc RefreshToken    (RefreshTokenReq)     returns (RefreshTokenRes);
+  rpc Logout          (LogoutReq)           returns (LogoutRes);
+
+  rpc SendPhoneVerification (SendPhoneVerificationReq) returns (SendPhoneVerificationRes);
+  rpc VerifyPhoneCode       (VerifyPhoneCodeReq)     returns (VerifyPhoneCodeRes);
+  rpc SignUpWithPhone       (SignUpWithPhoneReq)     returns (SignUpWithPhoneRes);
+  rpc LoginWithPhone        (LoginWithPhoneReq)      returns (LoginWithPhoneRes);
+
+
 }
 
 message SendVerificationReq { string email = 1; }
@@ -30,6 +40,43 @@ message SendVerificationRes { string message = 1; }
 
 message VerifyCodeReq  { string email = 1; string code = 2; }
 message VerifyCodeRes  { bool ok = 1; }
+
+message SendPhoneVerificationReq {
+  string phone_number = 1;  // 국가 코드 포함 (예: +82101234567)
+}
+message SendPhoneVerificationRes {
+  string message = 1;
+}
+
+message VerifyPhoneCodeReq {
+  string phone_number = 1;
+  string code = 2;
+}
+message VerifyPhoneCodeRes {
+  bool ok = 1;
+}
+
+message SignUpWithPhoneReq {
+  string phone_number = 1;
+  string password = 2;
+  string code = 3;
+  string name = 4;  // 선택적 추가 필드
+}
+message SignUpWithPhoneRes {
+  string user_id = 1;
+}
+
+message LoginWithPhoneReq {
+  string phone_number = 1;
+  string password = 2;
+}
+message LoginWithPhoneRes {
+  string user_id = 1;
+  string access_token = 2;
+  string refresh_token = 3;
+}
+
+
 
 message VerifyAuthResponse {
   bool ok               = 1;
@@ -44,3 +91,30 @@ message SignUpReq {
 }
 message SignUpRes { string user_id = 1; }
 
+message LoginReq {
+  string email    = 1;
+  string password = 2;
+}
+
+message LoginRes {
+  string user_id       = 1;
+  string access_token  = 2;
+  string refresh_token = 3;
+}
+
+message RefreshTokenReq {
+  string refresh_token = 1;
+}
+
+message RefreshTokenRes {
+  string access_token  = 1;
+  string refresh_token = 2;
+}
+
+message LogoutReq {
+  string refresh_token = 1;
+}
+
+message LogoutRes {
+  bool success = 1;
+}

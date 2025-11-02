@@ -1,6 +1,10 @@
+// pkg/token/jwt.go
+
 package token
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"os"
 	"time"
@@ -8,16 +12,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type Provider interface {
-	GenerateAccessToken(userID string) (string, error)
-	GenerateRefreshToken(userID string) (string, error)
-	ValidateAccessToken(token string) (*JWTClaims, error)
-	ValidateRefreshToken(token string) (*JWTClaims, error)
-}
-
 // JWTClaims 커스텀 클레임 구조
 type JWTClaims struct {
-	UserID string `json:"sub"`
+	UserID  string `json:"sub"`
+	TokenID string `json:"jti,omitempty"` // JWT ID 추가
 	jwt.RegisteredClaims
 }
 
@@ -28,10 +26,20 @@ var (
 )
 
 func getEnv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
+	if value, exists := os.LookupEnv(key); exists {
+		return value
 	}
 	return fallback
+}
+
+// 고유 토큰 ID 생성
+func generateTokenID() (string, error) {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // Access Token: 15분 유효
@@ -48,10 +56,16 @@ func GenerateAccessToken(userID string) (string, error) {
 	return token.SignedString(accessSecret)
 }
 
-// Refresh Token: 7일 유효
-func GenerateRefreshToken(userID string) (string, error) {
+// Refresh Token: 7일 유효, 고유 ID 포함
+func GenerateRefreshToken(userID string) (string, string, error) {
+	tokenID, err := generateTokenID()
+	if err != nil {
+		return "", "", err
+	}
+
 	claims := JWTClaims{
-		UserID: userID,
+		UserID:  userID,
+		TokenID: tokenID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -59,72 +73,48 @@ func GenerateRefreshToken(userID string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(refreshSecret)
+	signedToken, err := token.SignedString(refreshSecret)
+	if err != nil {
+		return "", "", err
+	}
+
+	return signedToken, tokenID, nil
 }
 
-// 토큰 검증 (Access용)
-func ValidateAccessToken(tokenStr string) (*JWTClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenStr, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+// Access Token 검증
+func ValidateAccessToken(tokenString string) (*JWTClaims, error) {
+	claims := &JWTClaims{}
+
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return accessSecret, nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
-	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
-		return claims, nil
+
+	if !token.Valid {
+		return nil, errors.New("invalid token")
 	}
-	return nil, errors.New("invalid access token")
+
+	return claims, nil
 }
 
-// 토큰 검증 (Refresh용)
-func ValidateRefreshToken(tokenStr string) (*JWTClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenStr, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+// Refresh Token 검증
+func ValidateRefreshToken(tokenString string) (*JWTClaims, error) {
+	claims := &JWTClaims{}
+
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return refreshSecret, nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
-	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
-		return claims, nil
+
+	if !token.Valid {
+		return nil, errors.New("invalid token")
 	}
-	return nil, errors.New("invalid refresh token")
+
+	return claims, nil
 }
-
-/*import (
-	"github.com/golang-jwt/jwt/v5"
-	"os"
-	"time"
-)
-
-type Provider interface {
-	// GenerateAccessToken은 사용자 식별자를 기반으로 JWT를 만들어 반환합니다.
-	GenerateAccessToken(userID string) (string, error)
-}
-
-type jwtProvider struct {
-	secret []byte
-	expiry time.Duration
-}
-
-func NewJWTProvider() Provider {
-	// JWT_SECRET 와 JWT_EXPIRY(예: "24h") 는 .env 에 설정해 두세요
-	exp, err := time.ParseDuration(os.Getenv("JWT_EXPIRY"))
-	if err != nil {
-		exp = 24 * time.Hour
-	}
-	return &jwtProvider{
-		secret: []byte(os.Getenv("JWT_SECRET")),
-		expiry: exp,
-	}
-}
-
-func (j *jwtProvider) GenerateAccessToken(userID string) (string, error) {
-	now := time.Now()
-	claims := jwt.MapClaims{
-		"sub": userID,
-		"iat": now.Unix(),
-		"exp": now.Add(j.expiry).Unix(),
-	}
-	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return tok.SignedString(j.secret)
-}*/
